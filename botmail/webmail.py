@@ -15,10 +15,6 @@ from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-PARENT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
-
-
 class Email:
 
     def __init__(
