@@ -12,6 +12,7 @@ from datetime import datetime
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email.message import EmailMessage
+from email.header import decode_header
 from email.mime.multipart import MIMEMultipart
 
 
@@ -24,7 +25,7 @@ class Email:
             prefix_env="WEBMAIL",
             smtp_port=587,
             imap_port=993
-            ):
+    ):
         self.prefix_env = prefix_env
         self.smtp_url = smtp_url
         self.imap_url = imap_url
@@ -90,11 +91,11 @@ class Email:
             )
 
     def create_file_txt(
-        self,
-        text: str = "",
-        name_file: str = "",
-        path_to_save: str = "",
-        subs: bool = False,
+            self,
+            text: str = "",
+            name_file: str = "",
+            path_to_save: str = "",
+            subs: bool = False,
     ):
 
         os.makedirs(path_to_save, exist_ok=True)
@@ -134,7 +135,7 @@ class Email:
         self.imap_server = imaplib.IMAP4_SSL(
             self.imap_url,
             port=self.imap_port
-            )
+        )
 
     def _conect_server_smtp(self):
         self.smtp_server = smtplib.SMTP(self.smtp_url, self.smtp_port)
@@ -151,9 +152,9 @@ class Email:
 
     def _login_smtp(self):
         self.smtp_server.login(
-                user=self.credentials['USUARIO'],
-                password=self.credentials['SENHA'],
-            )
+            user=self.credentials['USUARIO'],
+            password=self.credentials['SENHA'],
+        )
 
     def _header_mail_smtp(self, assunto, email_destinatario, emails_em_copia):
         if not isinstance(emails_em_copia, list):
@@ -174,8 +175,8 @@ class Email:
             text_mail,
             header_html: str | None = None,
             body_html: str | None = None
-            ):
-    
+    ):
+
         if not header_html:
             header = """
             <!DOCTYPE html>
@@ -242,7 +243,7 @@ class Email:
             self,
             body_message,
             format_mail: str = "html"
-            ):
+    ):
         self.message.attach(
             MIMEText(
                 body_message,
@@ -265,7 +266,7 @@ class Email:
             encoders.encode_base64(file_to_send)
             file_to_send.add_header(
                 "Content-Disposition",
-                f"attachment; filename={os.path.basename(file_path).replace(' ','_')}",
+                f"attachment; filename={os.path.basename(file_path).replace(' ', '_')}",
             )
             self.message.attach(file_to_send)
 
@@ -277,14 +278,14 @@ class Email:
         )
 
     def send_email(
-        self,
-        assunto: str,
-        email_destinatario: str,
-        emails_em_copia: list | str,
-        body_message: str,
-        path_file: str | None = None,
-        type_file: str = "octet-stream",
-        format_mail: str = "html",
+            self,
+            assunto: str,
+            email_destinatario: str,
+            emails_em_copia: list | str,
+            body_message: str,
+            path_file: str | None = None,
+            type_file: str = "octet-stream",
+            format_mail: str = "html",
     ):
         self._start_server_smtp()
         self._login_smtp()
@@ -292,11 +293,11 @@ class Email:
             assunto,
             email_destinatario,
             emails_em_copia
-            )
+        )
         self._body_mail_smtp(
             body_message,
             format_mail
-            )
+        )
         if path_file is not None and len(path_file) > 0:
             self._append_file_smtp(path_file, type_file)
         self._send_smtp()
@@ -318,10 +319,10 @@ class Email:
                     .decode(message.get_content_charset() or 'utf-8'))
 
     def forward_email(
-        self,
-        original_email_id: str | int,
-        forward_to: str | list,
-        body: str
+            self,
+            original_email_id: str | int,
+            forward_to: str | list,
+            body: str
     ) -> None:
         """Cria e envia um e-mail de encaminhamento."""
         status, data = self.imap_server.fetch(str(original_email_id), '(RFC822)')
@@ -329,7 +330,7 @@ class Email:
             original_message = email.message_from_bytes(data[0][1])
         else:
             raise Exception("Erro ao recuperar e-mail.")
-        
+
         forwarded_message = EmailMessage()
         COMMASPACE = ", "
         forward_to = (forward_to.split(';')
@@ -347,15 +348,15 @@ class Email:
         # Opcional: incluir o e-mail original como anexo (preserva 100% dos dados)
         forwarded_message.attach(MIMEText(
             body
-            ))
-        #forwarded_message.set_content(f"Encaminhando o e-mail:\n\n---\n{original_content}")
-        
+        ))
+        # forwarded_message.set_content(f"Encaminhando o e-mail:\n\n---\n{original_content}")
+
         forwarded_message.add_attachment(
             original_message.as_bytes(),
             maintype='message',
             subtype='rfc822'
-            )
-    
+        )
+
         self._start_server_smtp()
         self._login_smtp()
         self.smtp_server.send_message(forwarded_message)
@@ -363,11 +364,11 @@ class Email:
         self._close_server_smtp()
 
     def forward_email2(
-        self,
-        original_email_id: str | int,
-        forward_to: str | list,
-        body: str
-        ) -> None:
+            self,
+            original_email_id: str | int,
+            forward_to: str | list,
+            body: str
+    ) -> None:
         """Cria e envia um e-mail de encaminhamento."""
         # Recupera o e-mail original
         status, data = self.imap_server.fetch(str(original_email_id), '(RFC822)')
@@ -375,22 +376,22 @@ class Email:
             original_message = email.message_from_bytes(data[0][1])
         else:
             raise Exception("Erro ao recuperar e-mail.")
-        
+
         forwarded_message = EmailMessage()
         COMMASPACE = ", "
-        
+
         # Configura o assunto
         subject = original_message['Subject'].replace('\n', '').replace('\r', '')
         forwarded_message['Subject'] = f"Fwd: {subject}"
         forwarded_message['From'] = self.credentials['USUARIO']
         forwarded_message['To'] = COMMASPACE.join(forward_to.split(';'))
-        
+
         # Extrai o conteúdo do e-mail original
         original_content = self.extract_payload(original_message)
 
         # Constrói o corpo do e-mail com o histórico
         forwarded_message.set_content(f"{body}\n\n--- Histórico do E-mail Original ---\n{original_content}")
-        
+
         # Torna a mensagem multipart para aceitar anexos
         forwarded_message.make_mixed()
 
@@ -417,13 +418,13 @@ class Email:
                         maintype=part.get_content_type().split('/')[0],
                         subtype=part.get_content_type().split('/')[1],
                         filename=filename
-                        )
+                    )
 
         forwarded_message.add_attachment(
             original_message.as_bytes(),
             maintype='message',
             subtype='rfc822'
-            )
+        )
         # Envia o e-mail
         self._start_server_smtp()
         self._login_smtp()
@@ -530,12 +531,12 @@ class Email:
             )  # converts byte literal to string removing b''"utf-8"
             email_message = email.message_from_string(raw_email)
         return email_message
-    
+
     def extract_all_tables_from_email_html(self, id_):
         import chardet
         import pandas as pd
         from bs4 import BeautifulSoup
-        
+
         message = self.get_content_from_email_id(id_)
         email_body = None
         try:
@@ -546,12 +547,13 @@ class Email:
                         part_content = part.get_payload(decode=True)
                         detected_encoding = chardet.detect(part_content)['encoding']  # Detecta a codificação
                         logging.info(f'Detected encoding: {detected_encoding}')
-                        email_body = part_content.decode(detected_encoding, errors='replace')  # Decodifica com a codificação detectada
+                        email_body = part_content.decode(detected_encoding,
+                                                         errors='replace')  # Decodifica com a codificação detectada
             else:
                 email_body = message.get_payload(decode=True).decode()
         except UnicodeDecodeError as e:
             logging.error(e)
-        
+
         # Lista para armazenar os DataFrames
         dataframes = []
         if email_body:
@@ -560,7 +562,7 @@ class Email:
             tables = soup.find_all('table')
             if not tables:
                 raise Exception("Tabela não encontrada no e-mail.")
-            
+
             for table in tables:
                 rows = []
                 # Itera pelas linhas da tabela
@@ -575,9 +577,9 @@ class Email:
                     df = df[1:].reset_index(drop=True)  # Remove a primeira linha e redefine os índices
                     logging.info(df)
                     dataframes.append(df)
-            
+
         return dataframes
-    
+
     def get_content_from_email_id_by_fetch(self, id_):
         _, data = self.imap_server.fetch(str(id_).encode(), "(RFC822)")
         email_message = data[0][1].decode("utf-8")
@@ -619,9 +621,11 @@ class Email:
     def get_email_ids_by_range_date(self, data_ini, data_fim):
         data_ini = self.convert_string_date_to_datetime(data_ini)
         data_fim = self.convert_string_date_to_datetime(data_fim)
+        criteria = '(OR SINCE "{0:%d-%b-%Y}" ON "{1:%d-%b-%Y}")'.format(data_ini, data_fim)
+        logging.info(criteria)
         status, email_ids = self.imap_server.search(
             None,
-            '(OR SINCE "{0:%d-%b-%Y}" ON "{1:%d-%b-%Y}")'.format(data_ini, data_fim),
+            criteria,
         )
         email_ids = email_ids[0].split()
         email_ids = [int(id_) for id_ in email_ids]
@@ -647,7 +651,7 @@ class Email:
             id_,
             folder_to,
             list_types_to_download: list | None = None
-            ):
+    ):
         os.makedirs(folder_to, exist_ok=True)
         content = self.get_content_from_email_id(id_)
         for part in content.walk():
@@ -657,11 +661,27 @@ class Email:
                 continue
 
             fileName = part.get_filename()
-            fileName = self.clean_filename(fileName)
+            decoded_header = decode_header(fileName)
+            # decode_header pode retornar uma lista de tuplas, cada uma (decodificado, charset)
+            fname_decoded = ''
+            for dec, charset in decoded_header:
+                if charset:
+                    # Converte para string usando o charset
+                    fname_decoded += dec.decode(charset)
+                else:
+                    # Já está em str (Python 3), ou bytes sem charset
+                    if isinstance(dec, bytes):
+                        fname_decoded += dec.decode('utf-8', errors='replace')
+                    else:
+                        fname_decoded += dec
+
+            print(f"Nome decodificado do arquivo: {fname_decoded}")
+            fileName = self.clean_filename(fname_decoded)
             if fileName is None:
                 continue
             ext = fileName.split('.')[-1] if '.' in fileName else None
-            list_types_to_download = [value.upper() for value in list_types_to_download] if list_types_to_download is not None else None
+            list_types_to_download = [value.upper() for value in
+                                      list_types_to_download] if list_types_to_download is not None else None
             if ext is not None and list_types_to_download is not None and ext.upper() not in list_types_to_download:
                 continue
             if bool(fileName):
