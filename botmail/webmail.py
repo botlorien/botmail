@@ -653,7 +653,7 @@ class Email:
             list_types_to_download: list | None = None
     ):
         os.makedirs(folder_to, exist_ok=True)
-        content = self.get_content_from_email_id(id_)
+        content = self.get_content_from_email_id_by_fetch(id_)
         for part in content.walk():
             if part.get_content_maintype() == "multipart":
                 continue
